@@ -3,7 +3,7 @@
 Gebruik:
     python tests/speel_level.py voorbeelden/4-for.js            # snel, met nep-three.js
     python tests/speel_level.py voorbeelden/4-for.js --fout     # kies bij elke conditie eerst de verkeerde deur
-    python tests/speel_level.py voorbeelden/4-for.js --echt     # echte three.js (app/three.min.js of het CDN) + WebGL
+    python tests/speel_level.py voorbeelden/4-for.js --echt     # echte three.js (app/three.min.js) + WebGL
 
 Nodig: pip install playwright && playwright install chromium
 
@@ -35,11 +35,11 @@ async def speel(level, fout=False, echt=False, chrome=None, screenshot=None):
 
         async def route(r):
             u = r.request.url
-            if 'cdnjs' in u and not echt:
+            if u.endswith('/three.min.js') and not echt:
                 await r.fulfill(body=STUB, content_type='application/javascript')
             elif u.endswith('/level.js'):
                 await r.fulfill(body=level_src, content_type='application/javascript')
-            elif u.startswith('file:') or echt:
+            elif u.startswith('file:'):
                 await r.continue_()
             else:
                 await r.abort()

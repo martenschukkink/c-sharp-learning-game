@@ -73,10 +73,7 @@ Tip: houd een level kort (5 tot 15 regels). Elke regel is een kamer, en een loop
 
 ## In NexEd zetten
 
-1. **three.js toevoegen (aanbevolen).** Download
-   `https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js`
-   en zet het bestand als `three.min.js` in de map `app/`, naast `index.html`.
-   Zonder dit bestand laadt de game three.js van internet. Of NexEd dat toestaat, staat niet in de NexEd-documentatie.
+1. **three.js zit erbij.** `app/three.min.js` (three.js r128) hoort bij de app en moet altijd mee in de zip. De game laadt three.js nooit van internet.
 2. **Zippen.** Maak een zip van de map `app` (of van de bestanden erin). NexEd pakt één map in de zip vanzelf uit. Of gebruik `python tools/maak_nexed_zip.py voorbeelden/4-for.js`: die maakt in `dist/` een zip met precies de bestanden die nodig zijn, met het gekozen level.
 3. **Uploaden** als app in NexEd. Elke upload is een nieuwe versie die alle bestanden vervangt; maak dus per level een eigen app.
 4. **In een exercise zetten** via `/` in de Exercise Editor, of in Markdown:

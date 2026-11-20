@@ -23,16 +23,15 @@ out = Path(a.out) if a.out else ROOT / 'dist' / f"code-gangen-{level.stem if lev
 out.parent.mkdir(parents=True, exist_ok=True)
 
 three = APP / 'three.min.js'
+if not three.exists():
+    print('Fout: app/three.min.js ontbreekt. De app laadt three.js nooit van een CDN.'); sys.exit(1)
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
     z.write(APP / 'index.html', 'index.html')
     z.write(APP / 'engine.js', 'engine.js')
     z.write(level, 'level.js')
-    if three.exists():
-        z.write(three, 'three.min.js')
+    z.write(three, 'three.min.js')
 
 size = out.stat().st_size
 print(f'{out}  ({size / 1024:.0f} kB)')
-if not three.exists():
-    print('Let op: app/three.min.js ontbreekt; de app laadt three.js dan van cdnjs. Zie LEESMIJ.md.')
 if size > 5 * 1024 * 1024:
     print('Let op: groter dan 5 MB, NexEd accepteert dit niet.'); sys.exit(1)

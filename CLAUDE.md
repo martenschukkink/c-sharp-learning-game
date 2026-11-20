@@ -3,7 +3,7 @@
 Een 3D-browsergame (three.js r128) die C# uitlegt: het gebouw ís het programma, elke regel code is een kamer. Gemaakt voor MBO Software Developer-studenten en bedoeld om als app in een NexEd-exercise te draaien. Eigenaar: Marten (docent softwareontwikkeling). Communiceer in het Nederlands; teksten in de game en commentaar in de code ook in het Nederlands.
 
 ## Structuur
-- `app/index.html` – opmaak (CSS) en schermen. Laadt `./three.min.js` als die er is, anders three.js r128 van cdnjs. Daarna `level.js` en `engine.js`.
+- `app/index.html` – opmaak (CSS) en schermen. Laadt `./three.min.js` (three.js r128, onderdeel van de app; nooit van een CDN laden). Daarna `level.js` en `engine.js`.
 - `app/engine.js` – de hele game in één IIFE, zonder build-stap. Secties:
   1. lexer + parser (C#-subset → AST) en `check()` (scopes en types, foutmeldingen met regelnummer)
   2. `ev()` waarden met C#-semantiek (int-deling, string-concat, `True`/`False` bij printen) en `trace()` voor de tussenstappen in de uitleg
@@ -22,8 +22,7 @@ Een 3D-browsergame (three.js r128) die C# uitlegt: het gebouw ís het programma,
 ```
 pip install playwright && playwright install chromium
 python tests/run_alles.py            # snel, met nep-three.js (logica, paden, lekken)
-python tests/run_alles.py --echt     # echte three.js + WebGL via SwiftShader (zet app/three.min.js neer of zorg voor internet)
-python tests/speel_level.py voorbeelden/4-for.js --fout --echt --screenshot shot.png
+python tests/run_alles.py --echt     # echte three.js + WebGL via SwiftShaderpython tests/speel_level.py voorbeelden/4-for.js --fout --echt --screenshot shot.png
 ```
 - De speler loopt via `__game.tp` vak voor vak, respecteert schuifdeuren (richting, op slot) en conditiedeuren, en rijdt mee op banden.
 - Lekcontrole: met alle deuren dicht mag geen gebied twee kamers bevatten.
@@ -43,10 +42,11 @@ python tests/speel_level.py voorbeelden/4-for.js --fout --echt --screenshot shot
 - Scherm: plattegrond, inventory en HUD-console links; code rechts; uitleg midden onder.
 
 ## NexEd (docs.nexed.com/ontwikkelen/apps)
+Volledige beschrijving van de hand-in-API (protocol, `uploadType`s, `nexed:handin-ack`, voorbeeldcode) staat in `NEXED.md`. Lees die eerst bij werk aan het inleveren (sectie 11 van engine.js) of de sandbox.
 - Zip met `index.html` in de root, relatieve paden, max. 5 MB / 1000 bestanden; elke upload is een nieuwe versie (dus één app per level).
 - Sandbox: geen localStorage/cookies/IndexedDB, geen `alert()`, pop-ups of downloads. Pointer lock is onzeker → slepen en pijltjestoetsen moeten blijven werken.
 - Inleveren via `postMessage`: `nexed:handin-init` → `nexed:handin-config` (`canHandIn`, `uploadType`) → `nexed:handin` (`null` of `{text}`). Controleer `event.origin` tegen `(*.)app.nexed.com` en stuur daarna naar dat adres, niet naar `'*'`.
-- Of three.js van een CDN mag laden is niet gedocumenteerd; daarom liefst `three.min.js` meeleveren.
+- three.js wordt altijd meegeleverd als `three.min.js`; nooit van een CDN laden (ook niet als fallback).
 
 ## Een nieuw soort statement toevoegen
 parser (`simple()`/`statement()`) → `check()` → `exec()` of `runStmt()` (met `hit()` en een `message()`) → `placeStmt()` (kamer + schuifdeur) → highlighting in `highlightCode()` → voorbeeld in `voorbeelden/` + verwachting in `tests/run_alles.py` → LEESMIJ bijwerken.
