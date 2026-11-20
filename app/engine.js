@@ -1048,16 +1048,33 @@ function routePoint(rt, s) {
     acc += sg.L;
   }
 }
-const beltAt = {};
+// Eén strook per stuk route, midden op het pad (dus ook midden in een gang van twee vakken breed),
+// alleen over de vakken van de band zelf. Bij een bocht begint de volgende strook een halve breedte eerder.
+const beltAt = {}, beltTexs = [], BELT_W = CELL;
 const beltRoutes = LAYOUT.belts.map((b, i) => {
   const rt = { segs: segs(b.path.map(([x, y]) => ({ x: WX(x), z: WZ(y) }))) };
   rt.total = rt.segs.reduce((t, sg) => t + sg.L, 0);
-  for (const [x, y] of b.cells) {
-    beltAt[key(x, y)] = i;
-    const { dir } = closestOnRoute(rt, WX(x), WZ(y));
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(CELL, CELL).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: beltTex, transparent: true, opacity: .95 }));
-    m.position.set(WX(x), 0.02, WZ(y)); m.rotation.y = Math.atan2(-dir[0], -dir[1]);
+  const own = new Set();
+  for (const [x, y] of b.cells) { beltAt[key(x, y)] = i; own.add(key(x, y)); }
+  const strip = (ax, ay, ux, uy, t0, t1, k) => {
+    const len = t1 - t0, cx = ax + ux * (t0 + len / 2), cy = ay + uy * (t0 + len / 2);
+    const tex = beltTex.clone(); tex.needsUpdate = true; tex.repeat.set(1, len); beltTexs.push(tex);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(BELT_W, len * CELL).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex }));
+    m.position.set(WX(cx), 0.02 + k * 0.002, WZ(cy)); m.rotation.y = Math.atan2(-ux, uy);
     world.add(m);
+  };
+  for (let k = 1; k < b.path.length; k++) {
+    const [ax, ay] = b.path[k - 1], [bx, by] = b.path[k], L = Math.hypot(bx - ax, by - ay);
+    if (L < 1e-6) continue;
+    const ux = (bx - ax) / L, uy = (by - ay) / L, n = Math.max(1, Math.round(L / 0.05)), st = L / n;
+    const inBelt = j => own.has(key(Math.round(ax + ux * (j + 0.5) * st), Math.round(ay + uy * (j + 0.5) * st)));
+    for (let j = 0; j < n;) {
+      if (!inBelt(j)) { j++; continue; }
+      let e = j; while (e < n && inBelt(e)) e++;
+      const ext = j === 0 && k > 1 ? BELT_W / CELL / 2 : 0;
+      strip(ax, ay, ux, uy, j * st - ext, e * st, k);
+      j = e;
+    }
   }
   return rt;
 });
@@ -1425,7 +1442,7 @@ function frame() {
     beamMat.opacity = 0.12 + Math.sin(t * 3) * 0.05;
   } else beacon.visible = false;
   fieldTex.offset.y = (t * 0.4) % 1;
-  beltTex.offset.y = 1 - ((t * 1.2) % 1);
+  for (const tx of beltTexs) tx.offset.y = 1 - ((t * 1.2) % 1);
   for (const d of Object.values(doorAt)) d.mat.opacity = d.state === 'open' ? 0.07 : d.state === 'closed' ? 0.5 + Math.sin(t * 4 + d.x) * 0.1 : 0.24 + Math.sin(t * 3 + d.x) * 0.06;
   for (const g of gates) {
     const gx = WX(g.x), gz = WZ(g.y);
