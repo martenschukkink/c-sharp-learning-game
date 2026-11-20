@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code Gangen</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070a12; --panel:rgba(9,13,22,.86); --line:#22304a; --txt:#d7deea; --mut:#7d8aa3;
+  --decl:#38bdf8; --assign:#4ade80; --cond:#fbbf24; --loop:#e879f9; --out:#e5e7eb; --bad:#ff4d6d; --choice:#60a5fa;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:'Space Grotesk',system-ui,'Segoe UI',sans-serif}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(6px)}
+.ph{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);padding:10px 12px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ph b{color:var(--txt);font-weight:600}
+code{font-family:var(--mono)}
+
+/* rechts: code */
+#codecol{position:fixed;right:14px;top:14px;bottom:14px;width:430px;display:flex;flex-direction:column;gap:10px}
+#tools{display:flex;gap:8px;flex:none;justify-content:flex-end}
+button{font:inherit;font-size:13px;color:var(--txt);background:#131c2e;border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:#3b4d72;background:#18233a}
+button.primary{background:var(--decl);color:#04111c;border-color:var(--decl);font-weight:700;font-size:15px;padding:11px 22px}
+button.primary:hover{filter:brightness(1.1)}
+button.off{color:var(--mut);border-style:dashed}
+#codeBox{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}
+#code{position:relative;font-family:var(--mono);font-size:12.5px;line-height:1.5;padding-bottom:10px;overflow:auto;min-height:0}
+.ln{display:flex;align-items:center;border-left:3px solid transparent;white-space:pre;padding-right:8px;transition:background .25s,opacity .3s}
+.ln .no{width:34px;flex:none;text-align:right;color:#3d4a63;padding-right:12px;user-select:none}
+.ln .cnt{margin-left:auto;font-size:10px;color:var(--mut);background:#18223a;border-radius:8px;padding:0 7px;line-height:16px;visibility:hidden}
+.ln .cnt.on{visibility:visible}
+.ln.active{background:color-mix(in srgb, var(--c) 16%, transparent);border-left-color:var(--c)}
+.ln.active .no{color:var(--c)}
+.ln.active .no::before{content:'▶ ';font-size:9px}
+.ln.skipped{opacity:.33}
+.ln.skipped .src{text-decoration:line-through;text-decoration-color:#64748b}
+.ln.jumpfx{animation:jumpfx 1.4s ease-out}
+@keyframes jumpfx{0%,40%{background:rgba(251,191,36,.3);opacity:1}100%{background:transparent}}
+.fp{border-radius:4px;padding:0 1px;transition:background .25s}
+.fp.active{background:rgba(232,121,249,.3);outline:1px solid var(--loop)}
+sup.pc{font-size:9px;color:var(--loop);margin:0 1px;vertical-align:super;line-height:0}
+.kw{color:#c792ea}.ty{color:#82aaff}.num{color:#f78c6c}.str{color:#c3e88d}.cls{color:#ffcb6b}.op{color:#89ddff;font-weight:600}.com{color:#56637d;font-style:italic}
+
+/* links: plattegrond, inventory, console */
+#infocol{position:fixed;left:14px;top:14px;bottom:14px;width:280px;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+#mapwrap{padding-bottom:10px;display:flex;flex-direction:column;align-items:center;flex:none}
+#minimap{display:block;max-width:100%}
+#inv{padding-bottom:4px;min-height:0;overflow:auto;flex:0 1 auto}
+#invList{min-height:40px}
+.empty{color:var(--mut);font-size:13px;padding:0 12px 10px;line-height:1.4}
+.item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin:0 10px 8px;padding:7px 10px;border-radius:8px;background:#111a2b;border:1px solid #24314d;font-family:var(--mono);font-size:14px;transition:opacity .6s, transform .6s}
+.item .tb{font-size:11px;padding:2px 6px;border-radius:5px;background:rgba(130,170,255,.15);color:#82aaff}
+.item .nm{color:#e6edf7;overflow:hidden;text-overflow:ellipsis}
+.item .val{font-weight:600;color:#fff;text-align:right;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.item .val s{color:var(--mut);font-weight:400;margin-right:4px}
+.item .note{grid-column:1/-1;font-family:'Space Grotesk',sans-serif;font-size:11.5px;color:var(--mut);line-height:1.35}
+.item.pop{animation:pop .55s ease-out}
+.item.flash{animation:flash 1s ease-out}
+.item.gone{opacity:0;transform:translateX(-24px)}
+@keyframes pop{0%{transform:scale(.6);opacity:0;box-shadow:0 0 0 2px var(--decl)}60%{transform:scale(1.04);opacity:1}100%{transform:scale(1);box-shadow:0 0 0 0 transparent}}
+@keyframes flash{0%{box-shadow:0 0 0 2px var(--assign);background:#163424}100%{box-shadow:0 0 0 0 transparent;background:#111a2b}}
+#consoleBox{position:relative;margin-top:auto;flex:none;pointer-events:auto;font-family:var(--mono);font-size:13px;color:#cffafe;
+  background:linear-gradient(180deg,rgba(6,32,46,.82),rgba(3,14,24,.9));border:1px solid rgba(56,189,248,.4);border-radius:3px;
+  box-shadow:inset 0 0 18px rgba(34,211,238,.08),0 0 22px rgba(34,211,238,.14);backdrop-filter:blur(5px);
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+#consoleBox::before,#consoleBox::after{content:'';position:absolute;width:14px;height:14px;pointer-events:none}
+#consoleBox::before{top:-1px;left:-1px;background:linear-gradient(135deg,transparent 48%,#22d3ee 50%,transparent 56%)}
+#consoleBox::after{bottom:-1px;right:-1px;background:linear-gradient(135deg,transparent 44%,#22d3ee 50%,transparent 52%)}
+#consoleBox.ping{animation:cping .9s ease-out}
+@keyframes cping{0%{box-shadow:inset 0 0 26px rgba(34,211,238,.35),0 0 34px rgba(34,211,238,.5)}100%{box-shadow:inset 0 0 18px rgba(34,211,238,.08),0 0 22px rgba(34,211,238,.14)}}
+#consoleBox .cbar{display:flex;align-items:center;justify-content:space-between;padding:7px 12px 6px 18px;border-bottom:1px dashed rgba(56,189,248,.3);
+  font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#67e8f9;text-shadow:0 0 6px rgba(34,211,238,.6)}
+#consoleBox .ctitle::before{content:'▸ ';color:#22d3ee}
+#consoleBox .cstat{display:flex;align-items:center;gap:6px;color:#5eead4;opacity:.85}
+#consoleBox .cstat i{width:6px;height:6px;border-radius:50%;background:#2dd4bf;box-shadow:0 0 6px #2dd4bf;animation:blink 1.6s steps(1) infinite}
+#consoleOut{position:relative;padding:8px 12px 10px;min-height:96px;max-height:160px;overflow:auto;line-height:1.55;white-space:pre-wrap;
+  background:repeating-linear-gradient(0deg,rgba(34,211,238,.045) 0 1px,transparent 1px 3px);text-shadow:0 0 6px rgba(34,211,238,.45)}
+#consoleOut div::before{content:'› ';color:#22d3ee}
+#consoleOut .muted::before{content:'› ';color:#22d3ee;opacity:.6}
+#consoleOut .typed{display:inline-block;animation:type .5s steps(18,end)}
+@keyframes type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+#consoleOut .cursor{display:inline-block;width:8px;height:14px;background:#22d3ee;box-shadow:0 0 8px #22d3ee;vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* midden onder: uitleg */
+#msg{position:fixed;left:308px;right:458px;bottom:16px;display:flex;justify-content:center;pointer-events:none}
+#msgCard{max-width:640px;width:100%;padding:14px 18px 14px}
+#msgCard.bump{animation:bump .45s ease-out}
+@keyframes bump{0%{transform:translateY(8px);opacity:.4}100%{transform:none;opacity:1}}
+.tag{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding:3px 8px;border-radius:5px;color:#05101a;background:var(--c,#38bdf8)}
+#msgCard h3{margin:8px 0 6px;font-size:19px;font-weight:700}
+#msgCard p{margin:0;font-size:14.5px;line-height:1.55;color:#c9d3e3}
+#msgCard p.extra{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+#msgCard code{font-size:13px;background:#162036;border:1px solid #26344f;border-radius:4px;padding:1px 5px;color:#e6edf7;white-space:nowrap}
+#msgCard .t{color:var(--assign);font-weight:700}
+#msgCard .f{color:var(--bad);font-weight:700}
+#msgCard .next{margin-top:8px;font-size:12px;color:var(--mut)}
+
+#cross{position:fixed;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;pointer-events:none;opacity:.6}
+#cross::before,#cross::after{content:'';position:absolute;background:#fff}
+#cross::before{left:6px;top:0;width:2px;height:14px}
+#cross::after{top:6px;left:0;height:2px;width:14px}
+#hint{position:fixed;left:50%;top:18px;transform:translateX(-50%);font-size:13px;color:#cbd5e1;background:rgba(9,13,22,.75);border:1px solid var(--line);padding:6px 12px;border-radius:20px;pointer-events:none;transition:opacity .4s;white-space:nowrap}
+
+/* schermen */
+.overlay{position:fixed;inset:0;background:radial-gradient(ellipse at center, rgba(10,16,30,.82), rgba(3,5,10,.96));display:flex;align-items:center;justify-content:center;z-index:10;padding:20px;overflow:auto}
+.overlay.hidden{display:none}
+.card{max-width:680px;width:100%;background:#0b111e;border:1px solid var(--line);border-radius:14px;padding:28px 32px;margin:auto}
+.card h1{margin:0 0 4px;font-size:34px;letter-spacing:-.01em}
+.card h1 span{color:var(--decl)}
+.card .sub{color:var(--mut);margin:0 0 18px;font-size:15px}
+.card p{line-height:1.55;color:#c9d3e3;margin:0 0 14px}
+.legend{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 18px;margin:6px 0 18px;font-size:14px}
+.legend div{display:flex;align-items:center;gap:8px}
+.dot{width:12px;height:12px;border-radius:3px;flex:none}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;margin:0 0 22px;color:#c9d3e3}
+kbd{font-family:var(--mono);font-size:12px;background:#162036;border:1px solid #2a3858;border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:#e6edf7}
+.stats{display:grid;grid-template-columns:auto 1fr;gap:3px 22px;font-family:var(--mono);font-size:13.5px;background:#0f1728;border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:0 0 18px;line-height:1.6}
+.stats b{color:var(--loop)}
+.stats .ok{color:var(--assign)}
+.stats .sep{grid-column:1/-1;border-top:1px solid var(--line);margin:4px 0}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+#loaderrCode{font-family:var(--mono);font-size:13px;background:#0f1728;border:1px solid var(--line);border-radius:8px;padding:10px 0;margin:0 0 14px;white-space:pre;overflow:auto}
+#loaderrCode div{padding:0 12px}
+#loaderrCode span{display:inline-block;width:30px;color:#3d4a63}
+#loaderrCode .errline{background:rgba(255,77,109,.15);border-left:3px solid var(--bad)}
+#loaderrMsg{color:var(--bad);font-weight:600}
+
+/* kleinere schermen, bijvoorbeeld ingebed in een NexEd-pagina */
+@media (max-width:1180px){
+  #codecol{width:340px} #code{font-size:11px}
+  #msg{left:308px;right:368px}
+}
+@media (max-width:980px){
+  #mapwrap{display:none}
+  #codecol{width:270px} #infocol{width:220px}
+  #msg{left:14px;right:14px;bottom:10px}
+  #msgCard{padding:10px 14px} #msgCard h3{font-size:16px;margin:4px 0} #msgCard p{font-size:13px}
+  #code{font-size:10.5px}
+}
+@media (max-height:620px){
+  #mapwrap{display:none}
+  #consoleOut{min-height:60px;max-height:90px}
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="cross"></div>
+<div id="hint">Klik in het beeld om met de muis rond te kijken</div>
+
+<div id="codecol">
+  <div id="tools">
+    <button id="btnHelp">Uitleg</button>
+    <button id="btnReset">Opnieuw</button>
+    <button id="btnFull">Volledig scherm</button>
+    <button id="btnSound">Geluid aan</button>
+  </div>
+  <div class="panel" id="codeBox">
+    <div class="ph"><span><b>Program.cs</b></span><span>× = aantal keer uitgevoerd</span></div>
+    <div id="code"></div>
+  </div>
+</div>
+
+<div id="infocol">
+  <div class="panel" id="mapwrap">
+    <div class="ph" style="align-self:stretch">Plattegrond</div>
+    <canvas id="minimap"></canvas>
+  </div>
+  <div class="panel" id="inv">
+    <div class="ph"><span><b>Inventory</b></span><span>variabelen</span></div>
+    <div id="invList"></div>
+  </div>
+  <div id="consoleBox">
+    <div class="cbar"><span class="ctitle">Console</span><span class="cstat"><i></i>output</span></div>
+    <div id="consoleOut"></div>
+  </div>
+</div>
+
+<div id="msg"><div class="panel" id="msgCard"></div></div>
+
+<div class="overlay" id="intro">
+  <div class="card">
+    <h1>Code <span>Gangen</span></h1>
+    <p class="sub" id="levelTitle"></p>
+    <p id="levelIntro">Het gebouw ís het programma, van boven naar beneden. Elke regel code is een kamer: loop over het gloeiende vlak in het midden en de regel wordt uitgevoerd. Pas daarna gaat de glazen schuifdeur naar de volgende kamer open.</p>
+    <div class="legend">
+      <div><span class="dot" style="background:var(--decl)"></span>Declaratie: nieuwe variabele</div>
+      <div><span class="dot" style="background:var(--assign)"></span>Toekenning: waarde wijzigen</div>
+      <div data-needs="cond"><span class="dot" style="background:var(--cond)"></span>Conditie: reken hem zelf uit</div>
+      <div data-needs="loop"><span class="dot" style="background:var(--loop)"></span>Onderdelen van een loop</div>
+      <div data-needs="cond"><span class="dot" style="background:var(--choice)"></span>Deuren <b>true</b> / <b>false</b>: kies er één</div>
+      <div><span class="dot" style="background:#cbd5e1"></span>Schuifdeur: open na de regel, terug kan niet</div>
+      <div data-needs="belt"><span class="dot" style="background:#facc15"></span>Lopende band: brengt je naar de volgende regel</div>
+      <div><span class="dot" style="background:#e5e7eb"></span>Uitvoer verschijnt in de console</div>
+    </div>
+    <div class="keys">
+      <span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>lopen (of de pijltjestoetsen)</span>
+      <span><kbd>muis</kbd></span><span>rondkijken: klik in het beeld, of sleep met de muis</span>
+      <span><kbd>←</kbd> <kbd>→</kbd> / <kbd>Q</kbd> <kbd>E</kbd></span><span>draaien zonder muis</span>
+      <span><kbd>Shift</kbd></span><span>rennen</span>
+      <span><kbd>Esc</kbd></span><span>muis loslaten</span>
+      <span><kbd>M</kbd></span><span>geluid aan of uit</span>
+    </div>
+    <button class="primary" id="btnStart">Start</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="finish">
+  <div class="card">
+    <h1>Programma <span>klaar</span></h1>
+    <p class="sub">Alle regels zijn uitgevoerd. Dit is er gebeurd:</p>
+    <div class="stats" id="stats"></div>
+    <p id="finishText"></p>
+    <div class="btns">
+      <button class="primary" id="btnAgain">Nog een keer</button>
+      <button class="primary" id="btnHandin" hidden>Inleveren</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="loaderr">
+  <div class="card">
+    <h1>Fout in het <span>level</span></h1>
+    <p class="sub">De code in <code>level.js</code> kan niet worden gelezen. Pas de regel hieronder aan.</p>
+    <p id="loaderrMsg"></p>
+    <div id="loaderrCode"></div>
+    <p>Ondersteund: variabelen (<code>int</code>, <code>double</code>, <code>bool</code>, <code>string</code>), toekenningen (<code>=</code>, <code>+=</code>, <code>++</code> …), <code>if</code>/<code>else</code>, <code>for</code>, <code>while</code>, <code>Console.Write</code> en <code>Console.WriteLine</code>. Zie LEESMIJ.md.</p>
+  </div>
+</div>
+
+<!-- three.js: eerst een eigen kopie naast index.html, anders van het CDN -->
+<script src="./three.min.js"></script>
+<script>if (!window.THREE) document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');</script>
+<script src="./level.js"></script>
+<script src="./engine.js"></script>
+</body>
+</html>
