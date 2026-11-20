@@ -30,6 +30,9 @@ with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
     z.write(APP / 'engine.js', 'engine.js')
     z.write(level, 'level.js')
     z.write(three, 'three.min.js')
+    for f in sorted((APP / 'fonts').iterdir()):  # lettertypen + licenties, nooit extern laden
+        if f.suffix in ('.woff2', '.txt'):
+            z.write(f, f'fonts/{f.name}')
 
 size = out.stat().st_size
 print(f'{out}  ({size / 1024:.0f} kB)')

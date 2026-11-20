@@ -4,6 +4,7 @@ Een 3D-browsergame (three.js r128) die C# uitlegt: het gebouw ís het programma,
 
 ## Structuur
 - `app/index.html` – opmaak (CSS) en schermen. Laadt `./three.min.js` (three.js r128, onderdeel van de app; nooit van een CDN laden). Daarna `level.js` en `engine.js`.
+- `app/fonts/` – JetBrains Mono en Space Grotesk als woff2 (latin, SIL OFL; licenties ernaast), via `@font-face` in index.html. Geen enkele externe referentie (geen Google Fonts, geen CDN).
 - `app/engine.js` – de hele game in één IIFE, zonder build-stap. Secties:
   1. lexer + parser (C#-subset → AST) en `check()` (scopes en types, foutmeldingen met regelnummer)
   2. `ev()` waarden met C#-semantiek (int-deling, string-concat, `True`/`False` bij printen) en `trace()` voor de tussenstappen in de uitleg
