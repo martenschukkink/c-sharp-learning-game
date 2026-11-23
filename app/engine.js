@@ -371,13 +371,17 @@ function connectBelt(B, bs, half, y0) {
   B.belts.push({ cells, path: [[bs.xStart - 0.5, bs.yStart], [cx + 0.5, bs.yStart], [cx + 0.5, rowEnd], [Math.min(half, 2), rowEnd]] });
 }
 
+// Lege kamer waar losse uitgangen en banden samenkomen
+function junction(B, y, pend, endLabel) {
+  room(B, y, halfFor(pend), pend, { id: 'j' + (++junctionId), kind: 'junction', trigger: null, label: endLabel || '}', type: endLabel ? 'out' : 'junction' });
+}
+
 function placeBlock(stmts, pendIn, resolve, endLabel) {
   const B = new Builder(); let y = 0, pend = pendIn;
   for (const st of stmts) { const r = placeStmt(B, st, y, pend); y = r.y; pend = r.pend; }
   const loose = pend.belts.length > 0 || pend.entries.length !== 1 || pend.entries[0] !== 0;
   if ((resolve && loose) || endLabel) {
-    const id = 'j' + (++junctionId);
-    room(B, y, halfFor(pend), pend, { id, kind: 'junction', trigger: null, label: endLabel || '}', type: endLabel ? 'out' : 'junction' });
+    junction(B, y, pend, endLabel);
     if (resolve) gate(B, 0, y + 5, N, null);
     y += 6; pend = P([0]);
   }
@@ -398,13 +402,22 @@ function placeStmt(B, st, y0, pend) {
 const stmtType = st => st.kind === 'decl' ? 'decl' : st.kind === 'write' ? 'out' : 'assign';
 
 function placeIf(B, st, y0, pend) {
-  const h = halfFor(pend);
-  room(B, y0, h, pend, { id: st.id, kind: 'cond', trigger: 'room', label: `if (${st.condSrc})`, type: 'cond', node: st });
-  door(B, 0, y0 + 5, N, st.id, true);
-  door(B, h + 1, y0 + 2, E, st.id, false);
+  // true linksboven (het blok), false rechtsboven: een rechte lopende band langs het blok naar de volgende kamer.
+  // De deuren staan symmetrisch rond het midden; d is zo klein mogelijk met één vak muur tussen blok en band.
   const T = placeBlock(st.then.body, P([0]), true);
-  B.merge(T.B, 0, y0 + 6);
-  return { y: y0 + 6 + T.yEnd, pend: P(T.pend.entries, [{ xStart: h + 2, yStart: y0 + 2, cx: Math.max(h, T.B.hi, 2) + 2 }]) };
+  const d = Math.ceil((T.B.hi + 2) / 2), xl = -d, xr = d, yStart = y0 + 6;
+  const h = Math.max(2, d, ...pend.entries.map(Math.abs));
+  room(B, y0, h, pend, { id: st.id, kind: 'cond', trigger: 'room', label: `if (${st.condSrc})`, type: 'cond', node: st });
+  door(B, xl, y0 + 5, N, st.id, true);
+  door(B, xr, y0 + 5, N, st.id, false);
+  B.merge(T.B, xl, yStart);
+  const yEnd = Math.max(T.yEnd, 2);                      // ook bij een leeg blok: minstens één vak band + schuifdeur
+  for (let y = yStart + T.yEnd; y < yStart + yEnd; y++) B.fl(xl, y);
+  const yGate = yStart + yEnd - 1, yNext = yGate + 1, cells = [];
+  for (let y = yStart; y < yGate; y++) { B.fl(xr, y); cells.push([xr, y]); }
+  gate(B, xr, yGate, N, null);
+  B.belts.push({ cells, path: [[xr, yStart], [xr, yNext]] });
+  return { y: yNext, pend: P([xl, xr]) };
 }
 
 function placeIfElse(B, st, y0, pend) {
@@ -444,6 +457,8 @@ function placeFor(B, st, y0, pend) {
 }
 
 function placeWhile(B, st, y0, pend) {
+  // Een binnenkomende band eindigt rechts in de kamer, precies waar de false-deur van de while zit: eerst een lege kamer
+  if (pend.belts.length) { junction(B, y0, pend); gate(B, 0, y0 + 5, N, null); y0 += 6; pend = P([0]); }
   const h = halfFor(pend);
   room(B, y0, h, pend, { id: st.id, kind: 'cond', trigger: 'room', label: `while (${st.condSrc})`, type: 'loop', node: st });
   door(B, 0, y0 + 5, N, st.id, true);
@@ -834,7 +849,7 @@ function askDecision(c) {
   for (const d of doorsOf[n.id] || []) setDoor(d, 'neutral');
   let intro;
   if (n.kind === 'if') intro = n.else ? 'Een <b>if-else</b>: bij true voert het programma de if-tak uit (deur linksboven), bij false de else-tak (deur rechtsboven).'
-    : 'Een <b>if</b> zonder else: bij true voert het programma het blok uit (bovendeur), bij false slaat het het blok over (rechterdeur).';
+    : 'Een <b>if</b> zonder else: bij true voert het programma het blok uit (deur linksboven), bij false slaat het het blok over (deur rechtsboven).';
   else intro = `Vóór elke ronde controleert de ${n.kind}-loop de conditie. true (bovendeur): nog een ronde. false (rechterdeur): de loop stopt.`;
   const used = [...varsIn(n.cond)].map(v => { const x = lookup(v); return x ? `<b>${esc(v)}</b> = ${esc(shown(x))}` : ''; }).filter(Boolean).join(', ');
   message('cond', 'Conditie', isLoop(n) ? 'Nog een ronde?' : 'Welke deur kies je?',
@@ -936,7 +951,7 @@ instanced(new THREE.PlaneGeometry(CELL, CELL).rotateX(Math.PI / 2), new THREE.Me
 instanced(new THREE.PlaneGeometry(1.4, 0.22).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8fd3ff }), floorCells.filter(([x, y]) => !(x & 1) && !(y & 1)), H - 0.01);
 
 function makeLabel(text, color, height = 0.42, maxW = 9) {
-  const mat = new THREE.SpriteMaterial({ transparent: true, depthWrite: false });
+  const mat = new THREE.SpriteMaterial({ transparent: true, depthWrite: false, fog: false });   // labels blijven verlicht, ook op afstand
   const sprite = new THREE.Sprite(mat);
   function set(t, col) {
     const cv = document.createElement('canvas'), g = cv.getContext('2d');
@@ -975,7 +990,7 @@ for (const r of LAYOUT.rooms) {
     o.pad.position.set(WX(r.x), 0.02, WZ(r.y)); world.add(o.pad);
   }
   o.label = makeLabel(r.label, col, r.kind === 'junction' ? .34 : .42);
-  o.label.sprite.position.set(WX(r.x), 2.6, WZ(r.y)); world.add(o.label.sprite);
+  o.label.sprite.position.set(WX(r.x), 2.05, WZ(r.y)); world.add(o.label.sprite);
   rooms[r.id] = o;
 }
 const items = {};
@@ -1098,7 +1113,7 @@ for (const d of LAYOUT.doors) {
   }
   floorArrow(d.x, d.y, o.wd, .3);
   o.label = makeLabel(d.truth ? 'true' : 'false', CSSCOL.choice, 0.6);
-  o.label.sprite.position.set(WX(d.x), H - 0.6, WZ(d.y)); world.add(o.label.sprite);
+  o.label.sprite.position.set(WX(d.x), 2.1, WZ(d.y)); world.add(o.label.sprite);
   doorAt[key(d.x, d.y)] = o;
   (doorsOf[d.decision] = doorsOf[d.decision] || []).push(o);
 }
@@ -1433,7 +1448,7 @@ function frame() {
   for (const id in rooms) {
     const r = rooms[id], next = id === w, ran = (counts[id] || 0) > 0;
     if (r.pad) r.pad.material.opacity = next ? 0.75 + Math.sin(t * 5) * 0.25 : (ran ? 0.18 : 0.45);
-    r.label.sprite.material.opacity = next ? 1 : (ran ? 0.4 : 0.85);
+    r.label.sprite.material.opacity = next ? 1 : (ran ? 0.8 : 0.9);
   }
   const wr = rooms[w];
   if (wr && wr.kind !== 'junction') {

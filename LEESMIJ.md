@@ -63,7 +63,7 @@ De game controleert de code vooraf zoals de C#-compiler dat grofweg doet: een va
 ## Hoe de code een gebouw wordt
 
 - Elke regel is een kamer van 10 × 10 meter met een gloeiend vlak. Loopt de student eroverheen, dan wordt de regel uitgevoerd. Pas daarna gaat de glazen schuifdeur naar de volgende kamer open. Terug kan niet.
-- **if zonder else**: true = bovendeur naar het blok, false = rechterdeur, met een lopende band om het blok heen.
+- **if zonder else**: true = deur linksboven naar het blok, false = deur rechtsboven, met een lopende band langs het blok.
 - **if-else**: true = deur linksboven (if-tak), false = deur rechtsboven (else-tak). De takken komen samen in de kamer erboven.
 - **for**: init-kamer, dan de conditie. true = bovendeur naar de body; daarna een lopende band naar `i++` (links van de conditie) en terug de conditie in. false = rechterdeur, met een lopende band naar de regel na de loop.
 - **while**: net als for, zonder init- en update-kamer.

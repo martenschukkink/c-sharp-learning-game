@@ -19,6 +19,7 @@ VERWACHT = {
     'voorbeelden/6-alles.js': ['Poort dicht', '30'],
     'app/level.js': ['Poort dicht', '30'],
     'tests/testlevels/genest.js': ['vier', 'agroot', '2', '2.5', 'x=5!', 'False'],
+    'tests/testlevels/loop-na-loop.js': ['0', '3'],
 }
 FOUTEN = {
     'tests/testlevels/fout-onbekende-variabele.js': "Regel 2: De variabele 'b' bestaat (hier) niet",

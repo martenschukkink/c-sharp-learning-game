@@ -34,7 +34,7 @@ python tests/run_alles.py --echt     # echte three.js + WebGL via SwiftShaderpyt
 - Raster van 2 m. Kamers 5 vakken hoog; gewone regels 5 breed met een regel-vlak van 3×3 in de looplijn. Een conditiekamer is in z'n geheel de regel (binnenkomen = vraag stellen).
 - Het programma loopt naar het noorden (+y in het raster, −z in de wereld).
 - Schuifdeur (`gate`) tussen kamers: `req` = id van de kamer ervoor; op slot tot die regel is uitgevoerd (in een loop: elke ronde opnieuw). Wie er voorbij is, kan niet terug.
-- if zonder else: true = bovendeur, false = rechterdeur + lopende band om het blok heen naar de rechterkant van de volgende kamer.
+- if zonder else: true linksboven (het blok), false rechtsboven + rechte lopende band langs het blok naar de volgende kamer.
 - if-else: true linksboven, false rechtsboven; takken komen samen in de volgende kamer.
 - for: init-kamer → conditie; true = boven (body) → band links omlaag → update-kamer links van de conditie → schuifdeur terug de conditie in; false = rechts + band. while: idem zonder init/update.
 - Geen portalen/teleports (bewust afgeschaft); overslaan gaat via lopende banden.
