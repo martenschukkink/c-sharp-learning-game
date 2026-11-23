@@ -29,11 +29,11 @@ else
 bool heeftKaart = true;
 if (heeftKaart && energie > 5)
 {
-    Console.WriteLine("Poort open");
+    Console.WriteLine($"Kaart en genoeg energie. Huidige energie: {energie}");
 }
 else
 {
-    Console.WriteLine("Poort dicht");
+    Console.WriteLine("Te weinig energie of geen kaart");
 }
 
 if (sleutels > 0 || heeftKaart)
