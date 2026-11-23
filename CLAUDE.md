@@ -15,7 +15,7 @@ Een 3D-browsergame (three.js r128) die C# uitlegt: het gebouw ís het programma,
   7. uitvoering als generator: `yield {wait: kamerId}` wacht tot de speler op het vlak komt, `yield {choose, value}` wacht op de goede deur
   8. three.js-scène; 9. speler, botsingen, lopende banden; 10. plattegrond; 11. NexEd-inleveren; 12. schermen en animatielus
 - `app/level.js` – `window.LEVEL = { titel, code, uitleg?, intro? }`.
-- `voorbeelden/` – kant-en-klare levels. `LEESMIJ.md` – handleiding voor docenten.
+- `voorbeelden/` – kant-en-klare levels. `README.md` – handleiding voor docenten.
 - `tests/` – `speel_level.py` (automatische speler), `run_alles.py` (alle levels + verwachte uitkomst), `three-stub.js` (nep-three.js), `testlevels/`.
 - `tools/maak_nexed_zip.py` – zip voor NexEd met een gekozen level.
 
@@ -51,7 +51,7 @@ Volledige beschrijving van de hand-in-API (protocol, `uploadType`s, `nexed:handi
 - three.js wordt altijd meegeleverd als `three.min.js`; nooit van een CDN laden (ook niet als fallback).
 
 ## Een nieuw soort statement toevoegen
-parser (`simple()`/`statement()`) → `check()` → `exec()` of `runStmt()` (met `hit()` en een `message()`) → `placeStmt()` (kamer + schuifdeur) → highlighting in `highlightCode()` → voorbeeld in `voorbeelden/` + verwachting in `tests/run_alles.py` → LEESMIJ bijwerken.
+parser (`simple()`/`statement()`) → `check()` → `exec()` of `runStmt()` (met `hit()` en een `message()`) → `placeStmt()` (kamer + schuifdeur) → highlighting in `highlightCode()` → voorbeeld in `voorbeelden/` + verwachting in `tests/run_alles.py` → README bijwerken.
 
 ## Wensen / volgende stappen
 - `Console.ReadLine` via het consolevenster (invoer op de plek van de cursor).

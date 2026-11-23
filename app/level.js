@@ -1,6 +1,6 @@
 // =====================================================================
 // Code Gangen – level
-// Pas dit bestand aan voor je eigen exercise. Meer uitleg: LEESMIJ.md.
+// Pas dit bestand aan voor je eigen exercise. Meer uitleg: README.md.
 // =====================================================================
 window.LEVEL = {
   // Titel op het startscherm

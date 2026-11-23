@@ -13,7 +13,7 @@ voorbeelden/          kant-en-klare levels om te kopiëren naar app/level.js
 tests/                automatische tests (zie CLAUDE.md)
 tools/                maak_nexed_zip.py: maakt een uploadklare zip
 CLAUDE.md             technische notities, voor jezelf of voor Claude Code
-LEESMIJ.md            deze handleiding
+README.md             deze handleiding
 ```
 
 ## Een level maken
