@@ -436,24 +436,30 @@ function placeIfElse(B, st, y0, pend) {
 function placeFor(B, st, y0, pend) {
   room(B, y0, halfFor(pend), pend, { id: st.init.id, kind: 'stmt', trigger: 'pad', label: st.init.src, type: 'loop', node: st, part: 'init' });
   gate(B, 0, y0 + 5, N, st.init.id);
-  const yc = y0 + 6, h = 2;
-  room(B, yc, h, P([0]), { id: st.id, kind: 'cond', trigger: 'room', label: st.condSrc, type: 'loop', node: st, part: 'cond' });
-  door(B, 0, yc + 5, N, st.id, true);
-  door(B, h + 1, yc + 2, E, st.id, false);
+  // true linksboven (de body), false rechtsboven: een rechte lopende band langs de body naar de regel na de loop
   const Bd = placeBlock(st.body.body, P([0]), true);
-  B.merge(Bd.B, 0, yc + 6);
+  const d = Math.ceil((Bd.B.hi + 2) / 2), xl = -d, xr = d, yc = y0 + 6, h = Math.max(2, d);
+  room(B, yc, h, P([0]), { id: st.id, kind: 'cond', trigger: 'room', label: st.condSrc, type: 'loop', node: st, part: 'cond' });
+  door(B, xl, yc + 5, N, st.id, true);
+  door(B, xr, yc + 5, N, st.id, false);
+  B.merge(Bd.B, xl, yc + 6);
   const yb = yc + 6 + Bd.yEnd - 1;                       // rij met de uitgang van de body
-  const xu = Math.min(-h - 4, Bd.B.lo - 4);              // update-kamer links van de conditie
+  const xu = Math.min(-h - 4, xl + Bd.B.lo - 4);         // update-kamer links van de conditie
   room(B, yc, 2, P([]), { id: st.update.id, kind: 'stmt', trigger: 'pad', label: st.update.src, type: 'loop', node: st, part: 'update', cx: xu });
   gate(B, xu, yc + 5, S, null);
   gate(B, xu + 3, yc + 2, E, st.update.id);
   for (let x = xu + 4; x <= -h - 1; x++) B.fl(x, yc + 2);
   const cells = [];
   const add = (x, y) => { B.fl(x, y); cells.push([x, y]); };
-  for (let x = xu - 1; x <= 0; x++) { add(x, yb + 1); add(x, yb + 2); }
+  for (let x = xu - 1; x <= xl; x++) { add(x, yb + 1); add(x, yb + 2); }
   for (let y = yc + 6; y <= yb; y++) { add(xu - 1, y); add(xu, y); }
-  B.belts.push({ cells, path: [[0, yb + 1.5], [xu - 0.5, yb + 1.5], [xu - 0.5, yc + 7], [xu, yc + 6.2], [xu, yc + 4]] });
-  return { y: yb + 4, pend: P([], [{ xStart: h + 2, yStart: yc + 2, cx: Math.max(h, Bd.B.hi, 2) + 2 }]) };
+  B.belts.push({ cells, path: [[xl, yb + 1.5], [xu - 0.5, yb + 1.5], [xu - 0.5, yc + 7], [xu, yc + 6.2], [xu, yc + 4]] });
+  // false-band: loopt door tot voorbij de terugkeerband en komt via een schuifdeur in de volgende kamer
+  const yGate = yb + 3, falseCells = [];
+  for (let y = yc + 6; y < yGate; y++) { B.fl(xr, y); falseCells.push([xr, y]); }
+  gate(B, xr, yGate, N, null);
+  B.belts.push({ cells: falseCells, path: [[xr, yc + 6], [xr, yGate + 1]] });
+  return { y: yGate + 1, pend: P([xr]) };
 }
 
 function placeWhile(B, st, y0, pend) {
@@ -850,7 +856,7 @@ function askDecision(c) {
   let intro;
   if (n.kind === 'if') intro = n.else ? 'Een <b>if-else</b>: bij true voert het programma de if-tak uit (deur linksboven), bij false de else-tak (deur rechtsboven).'
     : 'Een <b>if</b> zonder else: bij true voert het programma het blok uit (deur linksboven), bij false slaat het het blok over (deur rechtsboven).';
-  else intro = `Vóór elke ronde controleert de ${n.kind}-loop de conditie. true (bovendeur): nog een ronde. false (rechterdeur): de loop stopt.`;
+  else intro = `Vóór elke ronde controleert de ${n.kind}-loop de conditie. true (${n.kind === 'for' ? 'deur linksboven' : 'bovendeur'}): nog een ronde. false (${n.kind === 'for' ? 'deur rechtsboven' : 'rechterdeur'}): de loop stopt.`;
   const used = [...varsIn(n.cond)].map(v => { const x = lookup(v); return x ? `<b>${esc(v)}</b> = ${esc(shown(x))}` : ''; }).filter(Boolean).join(', ');
   message('cond', 'Conditie', isLoop(n) ? 'Nog een ronde?' : 'Welke deur kies je?',
     `${intro}${opUitleg(n.cond)} Reken uit: <code>${esc(n.condSrc)}</code>${used ? ` (${used})` : ''}. Loop daarna door de deur <b>true</b> of <b>false</b>.`,

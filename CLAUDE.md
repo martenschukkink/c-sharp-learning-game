@@ -36,7 +36,8 @@ python tests/run_alles.py --echt     # echte three.js + WebGL via SwiftShaderpyt
 - Schuifdeur (`gate`) tussen kamers: `req` = id van de kamer ervoor; op slot tot die regel is uitgevoerd (in een loop: elke ronde opnieuw). Wie er voorbij is, kan niet terug.
 - if zonder else: true linksboven (het blok), false rechtsboven + rechte lopende band langs het blok naar de volgende kamer.
 - if-else: true linksboven, false rechtsboven; takken komen samen in de volgende kamer.
-- for: init-kamer → conditie; true = boven (body) → band links omlaag → update-kamer links van de conditie → schuifdeur terug de conditie in; false = rechts + band. while: idem zonder init/update.
+- for: init-kamer → conditie; true linksboven (body) → band links omlaag → update-kamer links van de conditie → schuifdeur terug de conditie in; false rechtsboven + rechte lopende band langs de body naar de volgende kamer.
+- while: true = boven (body) → band links omlaag → terug de conditie in; false = rechts + band.
 - Geen portalen/teleports (bewust afgeschaft); overslaan gaat via lopende banden.
 - Een genest blok dat met losse uitgangen of banden eindigt, krijgt een lege `}`-kamer (junction). Het programma eindigt in "einde programma".
 - `place*()` werkt met `pend = {entries: [x…], belts: [...]}`: de eerstvolgende kamer moet die ingangen omvatten en de banden aan de rechterkant ontvangen. Geneste blokken worden in een eigen `Builder` gebouwd en daarna verschoven (`merge`).
