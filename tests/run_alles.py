@@ -17,9 +17,11 @@ VERWACHT = {
     'voorbeelden/4-for.js': ['30'],
     'voorbeelden/5-while.js': ['Stappen: 2'],
     'voorbeelden/6-alles.js': ['Poort dicht', '30'],
-    'app/level.js': ['Poort dicht', '30'],
+    'app/level.js': ['=== Kassabon ===', 'Product: Chips', 'Aantal: 3', 'Prijs per stuk: 1.5', 'Op voorraad: True',
+                     '5x Cola', 'Op voorraad: False', 'Bedankt!'],
     'tests/testlevels/genest.js': ['vier', 'agroot', '2', '2.5', 'x=5!', 'False'],
     'tests/testlevels/loop-na-loop.js': ['0', '3'],
+    'tests/testlevels/interpolatie.js': ['x=2 {x} a False 2.5', 'ronde 0', 'ronde 1', 'geen gaten'],
 }
 FOUTEN = {
     'tests/testlevels/fout-onbekende-variabele.js': "Regel 2: De variabele 'b' bestaat (hier) niet",
@@ -27,6 +29,9 @@ FOUTEN = {
     'tests/testlevels/fout-type.js': 'Regel 2: Een int past niet in een variabele van type string',
     'tests/testlevels/fout-dubbel.js': "Regel 3: De variabele 'a' bestaat al",
     'tests/testlevels/fout-conditie.js': 'Regel 2: Een conditie moet true of false opleveren',
+    'tests/testlevels/fout-interpolatie-variabele.js': "Regel 2: De variabele 'b' bestaat (hier) niet",
+    'tests/testlevels/fout-interpolatie-expressie.js': 'Regel 2: Tussen { } in een $-tekst mag alleen de naam van een variabele staan',
+    'tests/testlevels/fout-interpolatie-buiten-console.js': 'Regel 2: Een $-tekst werkt (nog) alleen als hele invoer',
 }
 
 

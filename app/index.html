@@ -86,9 +86,8 @@ sup.pc{font-size:9px;color:var(--loop);margin:0 1px;vertical-align:super;line-he
   background:repeating-linear-gradient(0deg,rgba(34,211,238,.045) 0 1px,transparent 1px 3px);text-shadow:0 0 6px rgba(34,211,238,.45)}
 #consoleOut div::before{content:'› ';color:#22d3ee}
 #consoleOut .muted::before{content:'› ';color:#22d3ee;opacity:.6}
-#consoleOut .typed{display:inline-block;animation:type .5s steps(18,end)}
-@keyframes type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 #consoleOut .cursor{display:inline-block;width:8px;height:14px;background:#22d3ee;box-shadow:0 0 8px #22d3ee;vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
+#consoleOut .cursor.busy{animation:none}
 @keyframes blink{50%{opacity:0}}
 
 /* midden onder: uitleg */

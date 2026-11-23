@@ -40,6 +40,29 @@ function lex(src) {
       if (src[j] === '.' && /[0-9]/.test(src[j + 1] || '')) { isDouble = true; j++; while (/[0-9]/.test(src[j] || '')) j++; }
       toks.push({ t: 'num', v: Number(src.slice(i, j)), raw: src.slice(i, j), isDouble, line, col, start, end: j }); i = j; continue;
     }
+    if (c === '$' && src[i + 1] === '"') {
+      // string-interpolatie: parts is een rij van losse tekst en variabelen
+      const parts = []; let j = i + 2, s = '';
+      const gat = /\{[ \t]*([A-Za-z_][A-Za-z0-9_]*)[ \t]*\}/y;
+      while (j < src.length && src[j] !== '"') {
+        if (src[j] === '\n') throw new CodeError('Tekst zonder afsluitend aanhalingsteken (")', line);
+        if (src[j] === '\\') { const n = src[j + 1]; s += n === 'n' ? '\n' : n === 't' ? '\t' : n; j += 2; }
+        else if (src.startsWith('{{', j)) { s += '{'; j += 2; }
+        else if (src.startsWith('}}', j)) { s += '}'; j += 2; }
+        else if (src[j] === '}') throw new CodeError("Losse '}' in een $-tekst (schrijf '}}' voor een gewone accolade)", line);
+        else if (src[j] === '{') {
+          gat.lastIndex = j;
+          const m = gat.exec(src);
+          if (!m) throw new CodeError("Tussen { } in een $-tekst mag alleen de naam van een variabele staan (schrijf '{{' voor een gewone accolade)", line);
+          if (s) { parts.push(s); s = ''; }
+          parts.push({ k: 'var', name: m[1], line });
+          j += m[0].length;
+        } else s += src[j++];
+      }
+      if (j >= src.length) throw new CodeError('Tekst zonder afsluitend aanhalingsteken (")', line);
+      if (s) parts.push(s);
+      toks.push({ t: 'istr', v: src.slice(i, j + 1), parts, line, col, start, end: j + 1 }); i = j + 1; continue;
+    }
     if (c === '"') {
       let j = i + 1, s = '';
       while (j < src.length && src[j] !== '"') {
@@ -102,7 +125,7 @@ function parse(src) {
       const m = next();
       if (m.v !== 'WriteLine' && m.v !== 'Write') throw new CodeError(`Console.${m.v} wordt (nog) niet ondersteund`, m.line);
       want('(', `na Console.${m.v}`);
-      const e = is(')') ? null : expr();
+      const e = is(')') ? null : peek().t === 'istr' ? { k: 'interp', parts: next().parts } : expr();
       want(')');
       return tag({ kind: 'write', newline: m.v === 'WriteLine', expr: e }, first, toks[p - 1]);
     }
@@ -175,6 +198,7 @@ function parse(src) {
     const t = next();
     if (t.t === 'num') return { k: 'num', v: t.v, raw: t.raw, isDouble: t.isDouble };
     if (t.t === 'str') return { k: 'str', v: t.v };
+    if (t.t === 'istr') throw new CodeError('Een $-tekst werkt (nog) alleen als hele invoer van Console.Write of Console.WriteLine', t.line);
     if (t.t === 'kw' && (t.v === 'true' || t.v === 'false')) return { k: 'bool', v: t.v === 'true' };
     if (t.t === 'id') return { k: 'var', name: t.v, line: t.line };
     if (t.v === '(') { const e = expr(); want(')'); return { k: 'paren', e }; }
@@ -204,6 +228,7 @@ function check(prog) {
     switch (e.k) {
       case 'num': return e.isDouble ? 'double' : 'int';
       case 'str': return 'string';
+      case 'interp': e.parts.forEach(p => { if (typeof p !== 'string') need(p.name, line); }); return 'string';
       case 'bool': return 'bool';
       case 'var': return need(e.name, line);
       case 'paren': return type(e.e, line);
@@ -261,6 +286,7 @@ function ev(e) {
   switch (e.k) {
     case 'num': return { t: e.isDouble ? 'double' : 'int', v: e.v };
     case 'str': return { t: 'string', v: e.v };
+    case 'interp': return { t: 'string', v: e.parts.map(p => typeof p === 'string' ? p : csStr(ev(p))).join('') };
     case 'bool': return { t: 'bool', v: e.v };
     case 'paren': return ev(e.e);
     case 'var': {
@@ -298,6 +324,8 @@ function show(e, mode) {
   switch (e.k) {
     case 'num': return e.raw;
     case 'str': return `"${e.v}"`;
+    case 'interp': return '$"' + e.parts.map(p => typeof p === 'string' ? p.replace(/[{}]/g, '$&$&')
+      : `{${mode === 'src' ? p.name : (() => { try { return csStr(ev(p)); } catch (x) { return p.name; } })()}}`).join('') + '"';
     case 'bool': return String(e.v);
     case 'var': if (mode === 'src') return e.name; try { return lit(ev(e)); } catch (x) { return e.name; }
     case 'paren': return `(${show(e.e, mode)})`;
@@ -532,8 +560,11 @@ const hasOp = op => ALL.some(s => s.cond && JSON.stringify(s.cond).includes(`"op
 // =====================================================================
 const CSSCOL = { decl: '#38bdf8', assign: '#4ade80', cond: '#fbbf24', loop: '#e879f9', out: '#e5e7eb', junction: '#64748b', choice: '#60a5fa', bad: '#ff4d6d', ok: '#4ade80' };
 function highlightCode(s) {
-  return s.replace(/("(?:[^"\\]|\\.)*")|(\/\/.*$)|\b(\d+(?:\.\d+)?)\b|\b(if|else|for|while|true|false|new|return)\b|\b(int|double|bool|string|char|var|void)\b|\b(Console)\b|(&amp;&amp;|\|\||!(?!=))|([^"\/\w&|!]+|.)/g,
-    (m, str, com, num, kw, ty, cls, op, rest) => str ? `<span class="str">${str}</span>` : com ? `<span class="com">${com}</span>` : num ? `<span class="num">${num}</span>`
+  // in een $-tekst krijgen de {variabelen} hun eigen kleur; {{ en }} blijven gewone tekst
+  const gaten = t => t[0] !== '$' ? t : t.replace(/\{\{|\}\}|\{([^{}]*)\}/g, (h, n) => n === undefined ? h
+    : `</span><span class="op">{</span>${n}<span class="op">}</span><span class="str">`);
+  return s.replace(/(\$?"(?:[^"\\]|\\.)*")|(\/\/.*$)|\b(\d+(?:\.\d+)?)\b|\b(if|else|for|while|true|false|new|return)\b|\b(int|double|bool|string|char|var|void)\b|\b(Console)\b|(&amp;&amp;|\|\||!(?!=))|([^"$\/\w&|!]+|.)/g,
+    (m, str, com, num, kw, ty, cls, op, rest) => str ? `<span class="str">${gaten(str)}</span>` : com ? `<span class="com">${com}</span>` : num ? `<span class="num">${num}</span>`
       : kw ? `<span class="kw">${kw}</span>` : ty ? `<span class="ty">${ty}</span>` : cls ? `<span class="cls">${cls}</span>` : op ? `<span class="op">${op}</span>` : m);
 }
 const codeEl = $('code');
@@ -627,18 +658,46 @@ function invRemove(name) {
   setTimeout(() => { el.remove(); if (!invEls.size) invEmpty(); }, 650);
 }
 const consoleOut = $('consoleOut');
-let conLine = null;
-const conOutput = [];
-function consoleClear() { consoleOut.innerHTML = '<div class="muted"><span class="cursor"></span></div>'; conLine = null; conOutput.length = 0; }
+const TYPE_MS = 500;                // zelfde duur als de typegeluiden
+const conOutput = [];               // de volledige uitvoer, meteen bijgewerkt (ook voor de tests en het inleveren)
+const conQueue = [];                // wat nog op het scherm getypt moet worden
+let conOpen = false, conTimer = null, conCursor = null;
+function consoleNewLine() {
+  const line = document.createElement('div'); line.className = 'muted';
+  line.appendChild(conCursor); consoleOut.appendChild(line);
+}
+function consoleClear() {
+  clearTimeout(conTimer); conTimer = null; conQueue.length = 0;
+  consoleOut.innerHTML = '';
+  conCursor = document.createElement('span'); conCursor.className = 'cursor';
+  consoleNewLine();
+  conOpen = false; conOutput.length = 0;
+}
+function consoleTypeNext() {
+  const job = conQueue.shift();
+  if (!job) { conTimer = null; conCursor.classList.remove('busy'); return; }
+  const line = conCursor.parentNode, chars = Array.from(job.text), start = performance.now();
+  if (chars.length) line.classList.remove('muted');
+  const node = document.createTextNode('');
+  line.insertBefore(node, conCursor);
+  conCursor.classList.add('busy');
+  const tick = () => {
+    const shown = Math.min(chars.length, Math.floor((performance.now() - start) / TYPE_MS * chars.length) + 1);
+    node.data = chars.slice(0, shown).join('');
+    if (shown < chars.length) { consoleOut.scrollTop = consoleOut.scrollHeight; conTimer = setTimeout(tick, 16); return; }
+    if (job.newline) consoleNewLine();
+    consoleOut.scrollTop = consoleOut.scrollHeight;
+    consoleTypeNext();
+  };
+  tick();
+}
 function consoleWrite(text, newline) {
-  const m = consoleOut.querySelector('.muted'); if (m) m.remove();
-  if (!conLine) { conLine = document.createElement('div'); consoleOut.appendChild(conLine); conOutput.push(''); }
-  const span = document.createElement('span'); span.className = 'typed'; span.textContent = text;
-  conLine.appendChild(span); conOutput[conOutput.length - 1] += text;
+  if (!conOpen) conOutput.push('');
+  conOutput[conOutput.length - 1] += text;
+  conOpen = !newline;
   const box = $('consoleBox'); box.classList.remove('ping'); void box.offsetWidth; box.classList.add('ping');
-  if (newline) conLine = null;
-  const c = document.createElement('div'); c.className = 'muted'; c.innerHTML = '<span class="cursor"></span>'; consoleOut.appendChild(c);
-  consoleOut.scrollTop = consoleOut.scrollHeight;
+  conQueue.push({ text, newline });
+  if (conTimer === null) consoleTypeNext();
 }
 const msgCard = $('msgCard');
 function message(type, tag, title, body, next = 'Volg het licht naar de volgende regel.', line) {

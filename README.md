@@ -55,10 +55,11 @@ Testen: open `app/index.html` in je browser (dubbelklikken werkt). Zit er een fo
 | Keuzes | `if`, `if … else`, `else if` (genest mag) |
 | Herhalen | `for`, `while` (genest mag) |
 | Uitvoer | `Console.WriteLine(…)` en `Console.Write(…)` |
+| String-interpolatie | `Console.WriteLine($"Aantal: {aantal}");` (alleen in `Console.Write`/`WriteLine`, met losse variabelen tussen `{ }`) |
 
 De game controleert de code vooraf zoals de C#-compiler dat grofweg doet: een variabele die niet bestaat, een dubbele declaratie, een verkeerd type of een conditie die geen bool is, geven een foutmelding met het regelnummer.
 
-**Nog niet ondersteund**: methodes, arrays, `Console.ReadLine`, `switch`, `do … while`, `char`, `var`, string-interpolatie (`$"…"`). Zet in de code ook geen backtick (`` ` ``).
+**Nog niet ondersteund**: methodes, arrays, `Console.ReadLine`, `switch`, `do … while`, `char`, `var`, berekeningen of opmaak binnen `{ }` in een `$"…"`-tekst (zoals `{a + 1}` of `{prijs:F2}`). Zet in de code ook geen backtick (`` ` ``).
 
 ## Hoe de code een gebouw wordt
 
