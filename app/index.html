@@ -51,6 +51,8 @@ sup.pc{font-size:9px;color:var(--loop);margin:0 1px;vertical-align:super;line-he
 .kw{color:#c792ea}.ty{color:#82aaff}.num{color:#f78c6c}.str{color:#c3e88d}.cls{color:#ffcb6b}.op{color:#89ddff;font-weight:600}.com{color:#56637d;font-style:italic}
 
 /* links: plattegrond, inventory, console */
+/* console: 420px breed, krimpt op smallere schermen terug naar de kolombreedte (280px) */
+:root{--conw:clamp(280px,100vw - 980px,420px)}
 #infocol{position:fixed;left:14px;top:14px;bottom:14px;width:280px;display:flex;flex-direction:column;gap:10px;pointer-events:none}
 #mapwrap{padding-bottom:10px;display:flex;flex-direction:column;align-items:center;flex:none}
 #minimap{display:block;max-width:100%}
@@ -68,7 +70,7 @@ sup.pc{font-size:9px;color:var(--loop);margin:0 1px;vertical-align:super;line-he
 .item.gone{opacity:0;transform:translateX(-24px)}
 @keyframes pop{0%{transform:scale(.6);opacity:0;box-shadow:0 0 0 2px var(--decl)}60%{transform:scale(1.04);opacity:1}100%{transform:scale(1);box-shadow:0 0 0 0 transparent}}
 @keyframes flash{0%{box-shadow:0 0 0 2px var(--assign);background:#163424}100%{box-shadow:0 0 0 0 transparent;background:#111a2b}}
-#consoleBox{position:relative;margin-top:auto;flex:none;pointer-events:auto;font-family:var(--mono);font-size:13px;color:#cffafe;
+#consoleBox{position:relative;margin-top:auto;flex:none;align-self:flex-start;width:var(--conw);pointer-events:auto;font-family:var(--mono);font-size:13px;color:#cffafe;
   background:linear-gradient(180deg,rgba(6,32,46,.82),rgba(3,14,24,.9));border:1px solid rgba(56,189,248,.4);border-radius:3px;
   box-shadow:inset 0 0 18px rgba(34,211,238,.08),0 0 22px rgba(34,211,238,.14);backdrop-filter:blur(5px);
   clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
@@ -82,7 +84,7 @@ sup.pc{font-size:9px;color:var(--loop);margin:0 1px;vertical-align:super;line-he
 #consoleBox .ctitle::before{content:'▸ ';color:#22d3ee}
 #consoleBox .cstat{display:flex;align-items:center;gap:6px;color:#5eead4;opacity:.85}
 #consoleBox .cstat i{width:6px;height:6px;border-radius:50%;background:#2dd4bf;box-shadow:0 0 6px #2dd4bf;animation:blink 1.6s steps(1) infinite}
-#consoleOut{position:relative;padding:8px 12px 10px;min-height:96px;max-height:160px;overflow:auto;line-height:1.55;white-space:pre-wrap;
+#consoleOut{position:relative;padding:8px 12px 10px;min-height:130px;max-height:210px;overflow:auto;line-height:1.55;white-space:pre-wrap;
   background:repeating-linear-gradient(0deg,rgba(34,211,238,.045) 0 1px,transparent 1px 3px);text-shadow:0 0 6px rgba(34,211,238,.45)}
 #consoleOut div::before{content:'› ';color:#22d3ee}
 #consoleOut .muted::before{content:'› ';color:#22d3ee;opacity:.6}
@@ -91,7 +93,7 @@ sup.pc{font-size:9px;color:var(--loop);margin:0 1px;vertical-align:super;line-he
 @keyframes blink{50%{opacity:0}}
 
 /* midden onder: uitleg */
-#msg{position:fixed;left:308px;right:458px;bottom:16px;display:flex;justify-content:center;pointer-events:none}
+#msg{position:fixed;left:calc(var(--conw) + 28px);right:458px;bottom:16px;display:flex;justify-content:center;pointer-events:none}
 #msgCard{max-width:640px;width:100%;padding:14px 18px 14px}
 #msgCard.bump{animation:bump .45s ease-out}
 @keyframes bump{0%{transform:translateY(8px);opacity:.4}100%{transform:none;opacity:1}}
@@ -141,7 +143,7 @@ kbd{font-family:var(--mono);font-size:12px;background:#162036;border:1px solid #
 }
 @media (max-width:980px){
   #mapwrap{display:none}
-  #codecol{width:270px} #infocol{width:220px}
+  #codecol{width:270px} #infocol{width:220px} #consoleBox{width:100%}
   #msg{left:14px;right:14px;bottom:10px}
   #msgCard{padding:10px 14px} #msgCard h3{font-size:16px;margin:4px 0} #msgCard p{font-size:13px}
   #code{font-size:10.5px}
